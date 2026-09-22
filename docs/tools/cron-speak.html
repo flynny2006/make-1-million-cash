@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cron Speak — cron expression generator and explainer</title>
+    <meta name="description" content="Explain cron schedules in plain English. Build expressions with presets." />
+    <link rel="stylesheet" href="../assets/global.css" />
+  </head>
+  <body data-base="..">
+    <div class="shell">
+      <header id="topbar" class="topbar"></header>
+
+      <h1 class="page-title">Cron Speak</h1>
+      <p class="page-sub">Standard 5-field cron (minute hour day month weekday). No server cron — just clarity.</p>
+
+      <div class="tool-layout split">
+        <div class="panel">
+          <h3>Expression</h3>
+          <input type="text" id="expr" value="0 9 * * 1-5" style="font-size:16px;margin-bottom:12px" />
+          <div class="toolbar" style="margin-top:0">
+            <button type="button" class="btn btn-primary" id="explain">Explain</button>
+            <button type="button" class="btn btn-ghost" id="copy">Copy expression</button>
+          </div>
+          <h3 style="margin-top:20px">Presets</h3>
+          <div class="toolbar" id="presets"></div>
+
+          <h3 style="margin-top:20px">Simple builder</h3>
+          <div style="display:grid;gap:8px;font-size:13px;color:var(--muted)">
+            <label>Minute <input type="text" id="b-min" placeholder="*" /></label>
+            <label>Hour <input type="text" id="b-hour" placeholder="9" /></label>
+            <label>Day of month <input type="text" id="b-dom" placeholder="*" /></label>
+            <label>Month <input type="text" id="b-mon" placeholder="*" /></label>
+            <label>Weekday <input type="text" id="b-dow" placeholder="1-5" /></label>
+            <button type="button" class="btn btn-ghost" id="build">Apply builder</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3>Plain language</h3>
+          <pre id="summary" style="white-space:pre-wrap;font-family:var(--font);font-size:14px;line-height:1.6;margin:0;color:var(--text)"></pre>
+          <div class="error-line" id="error" hidden></div>
+        </div>
+      </div>
+    </div>
+    <script type="module">
+      import { mountTopbar } from '../assets/app.js';
+      import { explainCron, buildFromSimple, PRESETS } from '../assets/cron.js';
+
+      mountTopbar('cron');
+
+      const expr = document.getElementById('expr');
+      const summary = document.getElementById('summary');
+      const error = document.getElementById('error');
+      const presetsEl = document.getElementById('presets');
+
+      PRESETS.forEach((p) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'btn btn-ghost';
+        b.textContent = p.label;
+        b.addEventListener('click', () => {
+          expr.value = p.expr;
+          run();
+        });
+        presetsEl.appendChild(b);
+      });
+
+      function run() {
+        const r = explainCron(expr.value);
+        if (!r.ok) {
+          error.hidden = false;
+          error.textContent = r.error;
+          summary.textContent = '';
+          return;
+        }
+        error.hidden = true;
+        summary.textContent = r.summary;
+      }
+
+      document.getElementById('explain').addEventListener('click', run);
+      expr.addEventListener('input', run);
+      document.getElementById('copy').addEventListener('click', () => {
+        navigator.clipboard.writeText(expr.value);
+      });
+      document.getElementById('build').addEventListener('click', () => {
+        expr.value = buildFromSimple({
+          minute: document.getElementById('b-min').value,
+          hour: document.getElementById('b-hour').value,
+          dom: document.getElementById('b-dom').value,
+          month: document.getElementById('b-mon').value,
+          dow: document.getElementById('b-dow').value,
+        });
+        run();
+      });
+
+      run();
+    </script>
+  </body>
+</html>

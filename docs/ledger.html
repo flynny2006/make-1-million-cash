@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Experiment ledger — CashLab</title>
+    <meta name="description" content="Honest revenue tracker for the $0 CashLab experiment." />
+    <link rel="stylesheet" href="assets/global.css" />
+  </head>
+  <body data-base=".">
+    <div class="shell">
+      <header id="topbar" class="topbar"></header>
+
+      <h1 class="page-title">Experiment ledger</h1>
+      <p class="page-sub">
+        No fake numbers. Add rows when something pays (ads, tip, sale). Data stays in
+        <code>localStorage</code> until we sync to a backend.
+      </p>
+
+      <div class="panel" style="margin-bottom: 24px">
+        <div class="ledger-total" id="total">$0.00</div>
+        <div class="ledger-goal">of $1,000,000.00 goal</div>
+        <div class="meter" style="margin-top: 16px">
+          <div class="meter-fill" id="progress" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-bottom: 24px">
+        <h3>Add entry</h3>
+        <div style="display: grid; gap: 12px; max-width: 480px">
+          <input type="text" id="note" placeholder="What happened?" />
+          <input type="number" id="cents" placeholder="Amount in cents (e.g. 100 = $1)" step="1" />
+          <button type="button" class="btn btn-primary" id="add">Add to ledger</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>History</h3>
+        <table class="ledger-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Note</th>
+              <th>Amount</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+
+      <footer class="footer">Export: copy JSON from devtools → Application → localStorage → cashlab-ledger-v1</footer>
+    </div>
+    <script type="module">
+      import {
+        mountTopbar,
+        loadLedger,
+        saveLedger,
+        ledgerTotalCents,
+        formatUsd,
+        GOAL_CENTS,
+      } from './assets/app.js';
+
+      mountTopbar('ledger');
+
+      const totalEl = document.getElementById('total');
+      const progressEl = document.getElementById('progress');
+      const rowsEl = document.getElementById('rows');
+      let data = loadLedger();
+
+      function render() {
+        const total = ledgerTotalCents(data);
+        totalEl.textContent = formatUsd(total);
+        const pct = Math.min(100, (total / GOAL_CENTS) * 100);
+        progressEl.style.width = `${pct < 0.01 && total > 0 ? 0.05 : pct}%`;
+
+        rowsEl.innerHTML = data.entries
+          .slice()
+          .reverse()
+          .map(
+            (e) => `
+          <tr>
+            <td>${e.date}</td>
+            <td>${escapeHtml(e.note)}</td>
+            <td>${formatUsd(Number(e.cents) || 0)}</td>
+            <td><button type="button" class="btn btn-ghost" data-id="${e.id}" style="padding:4px 10px;font-size:12px">Remove</button></td>
+          </tr>`,
+          )
+          .join('');
+
+        rowsEl.querySelectorAll('button[data-id]').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            data.entries = data.entries.filter((x) => x.id !== btn.dataset.id);
+            saveLedger(data);
+            render();
+          });
+        });
+      }
+
+      function escapeHtml(s) {
+        return String(s)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;');
+      }
+
+      document.getElementById('add').addEventListener('click', () => {
+        const note = document.getElementById('note').value.trim();
+        const cents = parseInt(document.getElementById('cents').value, 10);
+        if (!note) return;
+        data.entries.push({
+          id: `e-${Date.now()}`,
+          date: new Date().toISOString().slice(0, 10),
+          note,
+          cents: Number.isFinite(cents) ? cents : 0,
+        });
+        saveLedger(data);
+        document.getElementById('note').value = '';
+        document.getElementById('cents').value = '';
+        render();
+      });
+
+      render();
+    </script>
+  </body>
+</html>

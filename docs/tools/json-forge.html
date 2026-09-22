@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>JSON Forge — format and validate JSON online</title>
+    <meta name="description" content="Format, minify, and validate JSON in the browser. No upload." />
+    <link rel="stylesheet" href="../assets/global.css" />
+  </head>
+  <body data-base="..">
+    <div class="shell">
+      <header id="topbar" class="topbar"></header>
+
+      <h1 class="page-title">JSON Forge</h1>
+      <p class="page-sub">Paste messy JSON. Get pretty print or a one-line minify. Stays on your machine.</p>
+
+      <div class="tool-layout split">
+        <div class="panel">
+          <h3>Input</h3>
+          <textarea id="input" placeholder='{"hello":"world"}'></textarea>
+          <div class="toolbar">
+            <button type="button" class="btn btn-primary" id="format">Pretty print</button>
+            <button type="button" class="btn btn-ghost" id="minify">Minify</button>
+            <button type="button" class="btn btn-ghost" id="copy">Copy output</button>
+          </div>
+          <div class="error-line" id="error" hidden></div>
+        </div>
+
+        <div class="panel">
+          <h3>Output</h3>
+          <textarea id="output" readonly placeholder="Valid JSON appears here…"></textarea>
+          <p style="font-size:13px;color:var(--muted);margin:12px 0 0" id="meta"></p>
+        </div>
+      </div>
+    </div>
+    <script type="module">
+      import { mountTopbar } from '../assets/app.js';
+      mountTopbar('json');
+
+      const input = document.getElementById('input');
+      const output = document.getElementById('output');
+      const error = document.getElementById('error');
+      const meta = document.getElementById('meta');
+
+      function parse() {
+        error.hidden = true;
+        try {
+          const v = JSON.parse(input.value);
+          return v;
+        } catch (e) {
+          error.hidden = false;
+          error.textContent = e.message;
+          return null;
+        }
+      }
+
+      document.getElementById('format').addEventListener('click', () => {
+        const v = parse();
+        if (v === null) return;
+        output.value = JSON.stringify(v, null, 2);
+        meta.textContent = `${output.value.length} characters · ${Array.isArray(v) ? v.length + ' items' : Object.keys(v).length + ' keys'}`;
+      });
+
+      document.getElementById('minify').addEventListener('click', () => {
+        const v = parse();
+        if (v === null) return;
+        output.value = JSON.stringify(v);
+        meta.textContent = `${output.value.length} characters (minified)`;
+      });
+
+      document.getElementById('copy').addEventListener('click', () => {
+        if (output.value) navigator.clipboard.writeText(output.value);
+      });
+
+      input.value = '{"experiment":"make 1 million cash","budget":0,"tools":["readme","json","cron"]}';
+    </script>
+  </body>
+</html>

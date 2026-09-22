@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>README Ship Score — free OSS README analyzer</title>
+    <meta
+      name="description"
+      content="Analyze your GitHub README for install steps, license, screenshots, and more. Runs in your browser."
+    />
+    <link rel="stylesheet" href="../assets/global.css" />
+  </head>
+  <body data-base="..">
+    <div class="shell">
+      <header id="topbar" class="topbar"></header>
+
+      <h1 class="page-title">README Ship Score</h1>
+      <p class="page-sub">Paste markdown. Get a ship-readiness score and a checklist. Nothing uploaded.</p>
+
+      <div class="tool-layout split">
+        <div class="panel">
+          <h3>Your README</h3>
+          <textarea id="input" placeholder="# My Project&#10;&#10;One line pitch..."></textarea>
+          <div class="toolbar">
+            <button type="button" class="btn btn-primary" id="analyze">Analyze</button>
+            <button type="button" class="btn btn-ghost" id="sample">Load sample</button>
+            <button type="button" class="btn btn-ghost" id="copy-card">Copy share text</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3>Results</h3>
+          <div class="score-ring">
+            <span class="num" id="score">—</span>
+            <span class="label" id="grade">Paste README</span>
+          </div>
+          <ul class="checklist" id="checks"></ul>
+        </div>
+      </div>
+
+      <footer class="footer">Tip: aim for 85+ before your next HN / Product Hunt launch.</footer>
+    </div>
+    <script type="module">
+      import { mountTopbar } from '../assets/app.js';
+      import { analyzeReadme, grade } from '../assets/readme-analyzer.js';
+
+      mountTopbar('readme');
+
+      const input = document.getElementById('input');
+      const scoreEl = document.getElementById('score');
+      const gradeEl = document.getElementById('grade');
+      const checksEl = document.getElementById('checks');
+
+      const sample = `# Nebula CLI
+
+Fast deploys for side projects. MIT.
+
+## Install
+
+\`\`\`bash
+npm i -g nebula-cli
+\`\`\`
+
+## Usage
+
+\`\`\`bash
+nebula ship
+\`\`\`
+
+![demo](./demo.png)
+
+[Docs](https://example.com) · [Report bug](https://github.com/you/nebula/issues)
+
+## License
+
+MIT — see LICENSE.
+`;
+
+      function icon(pass) {
+        if (pass) {
+          return `<svg class="check-icon pass" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 10l3 3 7-7" stroke-linecap="round"/></svg>`;
+        }
+        return `<svg class="check-icon fail" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10" cy="10" r="7"/><path d="M7 10h6" stroke-linecap="round"/></svg>`;
+      }
+
+      function run() {
+        const { score, results } = analyzeReadme(input.value);
+        scoreEl.textContent = String(score);
+        gradeEl.textContent = grade(score);
+        checksEl.innerHTML = results
+          .map(
+            (r) => `
+          <li>
+            ${icon(r.pass)}
+            <div>
+              <div>${r.label}</div>
+              ${!r.pass ? `<div style="color:var(--muted);font-size:13px;margin-top:4px">${r.tip}</div>` : ''}
+            </div>
+          </li>`,
+          )
+          .join('');
+      }
+
+      document.getElementById('analyze').addEventListener('click', run);
+      input.addEventListener('input', () => {
+        if (input.value.length > 20) run();
+      });
+      document.getElementById('sample').addEventListener('click', () => {
+        input.value = sample;
+        run();
+      });
+      document.getElementById('copy-card').addEventListener('click', () => {
+        const { score } = analyzeReadme(input.value);
+        const text = `My README Ship Score: ${score}/100 (${grade(score)}) — scored with CashLab`;
+        navigator.clipboard.writeText(text);
+      });
+
+      input.value = sample;
+      run();
+    </script>
+  </body>
+</html>
