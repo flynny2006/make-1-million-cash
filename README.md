@@ -14,6 +14,11 @@
 | Cron Speak | `site/tools/cron-speak.html` | Long-tail SEO ("cron generator") |
 | Experiment Ledger | `site/ledger.html` | Building-in-public story |
 
+**Live site:** https://flynny2006.github.io/make-1-million-cash/  
+**Repo:** https://github.com/flynny2006/make-1-million-cash
+
+Edit files in `site/`, then run `.\sync-docs.ps1` before push (GitHub Pages serves `docs/`).
+
 ## Run locally (no install)
 
 ```powershell
